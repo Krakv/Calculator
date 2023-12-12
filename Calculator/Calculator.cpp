@@ -14,7 +14,6 @@ static int SI;
 static string DIGIT = "0123456789";
 Tree* root;
 
-
 static void InsNode(Tree*& tree, char c) {
     tree = new Tree();
     tree->inf = c;
@@ -116,7 +115,7 @@ int main()
         cout << "Correct\n";
     }
     else {
-        cout << "Too much symbols\n";
+        cout << "Useless symbols\n";
     }
     if (root != nullptr) {
         cout << "tree:\n";
