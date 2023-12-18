@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <thread>
+#include "FileStream.h"
 using namespace std;
 
 struct Tree {
@@ -16,6 +17,11 @@ struct List {
     List* next = nullptr;
 };
 
+struct ListStr {
+    string str = "";
+    ListStr* next = nullptr;
+};
+
 static string ExprStr;
 static char scanSymbol;
 static int SI;
@@ -23,8 +29,6 @@ static string DIGIT = "0123456789";
 static string LETTER = "abcdefghijklmnopqrstuvwxyz";
 Tree* root;
 List* letters = nullptr;
-
-
 
 static void InsNode(Tree*& tree, char c) {
     tree = new Tree();
@@ -195,13 +199,54 @@ static int Calculate(Tree*& tree) {
 
 }
 
+static ListStr* GetNotes() {
+    string fs = InputFormula("example.txt");
+    ListStr* formulas = new ListStr();
+    ListStr* list = formulas;
+    for (int i = 0; i < fs.length() && fs[i] != 'э'; i++) {
+        if (fs[i] != '\n') {
+            if (fs[i] != '\r')
+                list->str += fs[i];
+        }
+        else {
+            list->next = new ListStr();
+            list = list->next;
+        }
+    }
+    return formulas;
+}
+
+static void PrintNotes(ListStr* formulas) {
+    ListStr* list = formulas;
+    int index = 1;
+    cout << index++ << ". Свой пример" << endl;
+    while (list != nullptr) {
+        cout << index++ << ". " << list->str << endl;
+        list = list->next;
+    }
+}
+
 int main()
 {
     setlocale(LC_ALL, "Russian");
 
     root = nullptr;
-    cout << "Введите выражение:\n";
-    cin >> ExprStr;
+    
+    ListStr* formulas = GetNotes();
+    PrintNotes(formulas);
+    
+    int optionNumber = 1;
+    cout << "Введите номер:\n";
+    cin >> optionNumber;
+    if (optionNumber == 1) {
+        cout << "Введите выражение:\n";
+        cin >> ExprStr;
+    }
+    else {
+        for (int i = 2; i < optionNumber; i++)
+            formulas = formulas->next;
+        ExprStr = formulas->str;
+    }
     SI = 0;
     scanSymbol = ExprStr[SI];
     EXPRESSION(root);
