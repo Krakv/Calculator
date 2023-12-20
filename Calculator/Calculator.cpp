@@ -32,7 +32,7 @@ static string OPERATIONS = "+-*/) "; // Массив допустимых сим
 Tree* root; // Дерево выражения
 HANDLE hSemLetter = CreateSemaphore(NULL, 1, 2, NULL); // Семафор для синхронизации доступа к списку значений переменных
 
-HRESULT LoadAndCallSomeFunction(DWORD dwParam1, UINT* puParam2); // Функция явной загрузки библиотеки
+HRESULT LoadAndCallSomeFunction(DWORD dwParam1, UINT* puParam2); // Функция явной загрузки библиотеки DLL
 
 // Функция записи значения в дерево выражения
 static void InsNode(Tree*& tree, char c) {
@@ -91,7 +91,7 @@ static int ADDEND(Tree*& tree, int* SI, string ExprStr);
 
 static int Factor(Tree*& tree, int* SI, string ExprStr); 
 
-// Функция выражения с основными операторами + и -
+// Функция анализа выражения с основными операторами + и -
 static int EXPRESSION(Tree*& tree, int* SI, string ExprStr) {
     int exitCode = 0; // Код завершения работы функции
     Tree* O = nullptr; 
@@ -138,7 +138,8 @@ static int EXPRESSION(Tree*& tree, int* SI, string ExprStr) {
     return exitCode;
 }
 
-// Функция выражения с основными операторами * и /
+
+// Функция анализа выражения с основными операторами * и /
 static int ADDEND(Tree*& tree, int* SI, string ExprStr) {
     int exitCode = 0; // Код завершения работы функции
     Tree* O = nullptr;
@@ -178,7 +179,7 @@ static int ADDEND(Tree*& tree, int* SI, string ExprStr) {
     return exitCode;
 }
 
-// Функция извлечение части выражения (число, переменная или другое выражение)
+// Функция анализа  части выражения (число, переменная или другое выражение)
 static int Factor(Tree*& tree, int* SI, string ExprStr) {
     int exitCode = 0; // Код завершения работы функции
 
@@ -253,6 +254,12 @@ static int TakeLetter(char letter, List*& letters) {
         cout << endl << "Введите значение переменной " << letter << ": ";
         int result;
         cin >> result;
+        while (cin.peek() != '\n' || cin.fail()) {
+            cin.clear();
+            cout << "Неправильный ввод целого числа\n";
+            cout << endl << "Введите значение переменной " << letter << ": ";
+            cin >> result;
+        }
 
         // Создание элемента списка
         list = new List();
