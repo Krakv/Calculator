@@ -332,7 +332,7 @@ static ListStr* GetNotes() {
     return formulas;
 }
 
-static void PrintNotes(ListStr* formulas) {
+static int PrintNotes(ListStr* formulas) {
     ListStr* list = formulas;
     int index = 1;
     cout << index++ << ". Свой пример" << endl;
@@ -340,7 +340,8 @@ static void PrintNotes(ListStr* formulas) {
         cout << index++ << ". " << list->str << endl;
         list = list->next;
     }
-    cout << index++ << ". Добавить пример в файл" << endl;
+    cout << index << ". Добавить пример в файл" << endl;
+    return index;
 }
 
 static void WriteNote() {
@@ -409,16 +410,26 @@ int main()
 {
     setlocale(LC_ALL, "Russian");
     root = nullptr;
-    string ExprStr = "";
+    string ExprStr = "\0";
     int SI = 0;
+    int count;
     
     ListStr* formulas = nullptr;
     formulas = GetNotes();
-    PrintNotes(formulas);
+    count = PrintNotes(formulas);
     
     int optionNumber = 1;
     cout << "Введите номер:\n";
+    
     cin >> optionNumber;
+    if (cin.peek() == ' '){
+        cout << "Присутствует пробел.";
+        return 1;
+    }
+    if (cin.fail()) {
+        cout << "Ошибка чтения целого числа.";
+        return 1;
+    }
     cin.ignore();
     if (optionNumber == 1) {
         cout << "Введите выражение:\n";
@@ -429,10 +440,14 @@ int main()
             formulas = formulas->next;
         if (formulas != nullptr)
             ExprStr = formulas->str;
-        else {
-            WriteNote();
-            return 1;
-        }
+    }
+    if (count == optionNumber) {
+        WriteNote();
+        return 1;
+    }
+    if (ExprStr == "\0") {
+        cout << "Неверное значение.";
+        return 1;
     }
 
     int exitCode = EXPRESSION(root, &SI, ExprStr);
