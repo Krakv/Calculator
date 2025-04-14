@@ -1,5 +1,4 @@
-﻿#include <Windows.h>
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <thread>
 #include <bitset>
@@ -33,6 +32,7 @@ Tree* root; // Дерево выражения
 HANDLE hSemLetter = CreateSemaphore(NULL, 1, 2, NULL); // Семафор для синхронизации доступа к списку значений переменных
 
 HRESULT LoadAndCallSomeFunction(DWORD dwParam1, UINT* puParam2); // Функция явной загрузки библиотеки DLL
+void PrintCodeError(int exitCode);
 
 // Функция записи значения в дерево выражения
 static void InsNode(Tree*& tree, char c) {
@@ -75,7 +75,7 @@ static void WriteExpr(Tree* tree) {
     }
 }
 
-// Функция считывания числа из дерева выражения
+// Функция считывания числа в дерево выражения
 static int Number(Tree* tree, int * SI, string ExprStr) {
     int exitCode = 0;
     tree->inf = ExprStr[*SI];
@@ -233,7 +233,7 @@ static int TakeNumber(Tree* tree, int num = 0) {
     return num + (int)tree->inf - 48;
 }
 
-// Функция извлечения
+// Функция извлечения переменной
 static int TakeLetter(char letter, List*& letters) {
     // Ожидание, пока эта функция используется
     WaitForSingleObject(hSemLetter, INFINITE);
@@ -256,6 +256,7 @@ static int TakeLetter(char letter, List*& letters) {
         cin >> result;
         while (cin.peek() != '\n' || cin.fail()) {
             cin.clear();
+            cin.ignore(100000000000, '\n');
             cout << "Неправильный ввод целого числа\n";
             cout << endl << "Введите значение переменной " << letter << ": ";
             cin >> result;
@@ -303,11 +304,14 @@ bool AskForRepeat(string text = "Ошибка", bool hadPerems = true) {
 }
 
 // Фильтр для обработки исключений, связанных с арифметическим переполнением и делением на ноль
-int ExceptionFilter(int code, bool * entryFlag) {
+int ExceptionFilter(int code, int * exitCode, bool * hasError) {
+    if (*hasError) {
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
     if (code == EXCEPTION_INT_OVERFLOW) {
         // Если ответ на запрос положительный, то флаг входа в цикл принимает значение истина
         if (AskForRepeat("Похоже, что запись результата арифметической операции занимает слишком много места, чтобы записать его в регистр процессора. Продолжение выполнения программы приведет к неверному результату вычислений.")) {
-            *entryFlag = true;
+            *hasError = true;
             return EXCEPTION_EXECUTE_HANDLER;
         }
         else
@@ -316,86 +320,79 @@ int ExceptionFilter(int code, bool * entryFlag) {
     else if (code == EXCEPTION_INT_DIVIDE_BY_ZERO) {
         // Если ответ на запрос положительный, то флаг входа в цикл принимает значение истина
         if (AskForRepeat("Обнаружено деление на ноль. Измените значения переменных, или программа завершится аварийно."))
-            *entryFlag = true;
+            *hasError = true;
+        else
+            *exitCode = -1;
         return EXCEPTION_EXECUTE_HANDLER;
     }
     else
         return EXCEPTION_CONTINUE_SEARCH;
 }
 
-static void Calculate(Tree*& tree, List*& letters, int* res, int* exitCode); // Функция для высчитывания значения дерева выражения
+static void Calculate(Tree*& tree, List*& letters, int* res, int* exitCode, bool* hasError); // Функция для высчитывания значения дерева выражения
 
 // Функция создания потоков, для параллельного вычисления результата частей выражения
-void resultThread(Tree*& tree, List*& letters, int * res1, int * res2, int * exitCode) {
+void resultThread(Tree*& tree, List*& letters, int * res1, int * res2, int * exitCode, bool* hasError) {
     int exitCode1 = 0; 
     int exitCode2 = 0;
-    thread thread1(Calculate, ref(tree->left), ref(letters), res1, &exitCode1);
-    thread thread2(Calculate, ref(tree->right), ref(letters), res2, &exitCode2);
+    thread thread1(Calculate, ref(tree->left), ref(letters), res1, &exitCode1, hasError);
+    thread thread2(Calculate, ref(tree->right), ref(letters), res2, &exitCode2, hasError);
     thread1.join();
     thread2.join();
     *exitCode = min(exitCode1, exitCode2); // Минимальный код завершения программы => отрицательное значение свидетельствует о наличии ошибки
 }
 
 // Функция высчитывания результата работы операторов + - * /
-void result(Tree*& tree, List*& letters, int* res, int* exitCode) {
-    bool entryFlag; // Флаг входа в цикл
-    do {
-        entryFlag = false;
-        __try {
-            int res1 = 0; int res2 = 0;
-            
-            // Получаем результаты работ потоков
-            resultThread(tree, letters, &res1, &res2, exitCode);
+void result(Tree*& tree, List*& letters, int* res, int* exitCode, bool * hasError) {
+    __try {
+        int res1 = 0; int res2 = 0;
 
-            // Сложение
-            if (tree->inf == '+') {
-                *res = res1 + res2;
-                // Проверка на арифм. переполнение
-                LoadAndCallSomeFunction(__readeflags(), 0);
-            }
-            // Вычитание
-            else if (tree->inf == '-') {
-                *res = res1 - res2;
-                // Проверка на арифм. переполнение
-                LoadAndCallSomeFunction(__readeflags(), 0);
-            }
-            // Умножение
-            else if (tree->inf == '*') {
-                *res = res1 * res2;
-                // Проверка на арифм. переполнение
-                LoadAndCallSomeFunction(__readeflags(), 0);
-            }
-            // Деление
-            else if (tree->inf == '/') {
-                *res = res1 / res2;
-            }
+        // Получаем результаты работ потоков
+        resultThread(tree, letters, &res1, &res2, exitCode, hasError);
+
+        // Сложение
+        if (tree->inf == '+') {
+            *res = res1 + res2;
+            // Проверка на арифм. переполнение
+            LoadAndCallSomeFunction(__readeflags(), 0);
         }
-        __except (ExceptionFilter(GetExceptionCode(), &entryFlag)) {
-            letters = nullptr;
-            // Если ошибка деления на ноль
-            if (GetExceptionCode() == EXCEPTION_INT_DIVIDE_BY_ZERO && !exitCode) 
-                *exitCode = -1;
+        // Вычитание
+        else if (tree->inf == '-') {
+            *res = res1 - res2;
+            // Проверка на арифм. переполнение
+            LoadAndCallSomeFunction(__readeflags(), 0);
         }
-    } while (entryFlag);
+        // Умножение
+        else if (tree->inf == '*') {
+            *res = res1 * res2;
+            // Проверка на арифм. переполнение
+            LoadAndCallSomeFunction(__readeflags(), 0);
+        }
+        // Деление
+        else if (tree->inf == '/') {
+            *res = res1 / res2;
+        }
+    }
+    __except (ExceptionFilter(GetExceptionCode(), exitCode, hasError)) {
+        letters = nullptr;
+    }
 }
 
 // Функция высчитывания результата дерева выражения
-static void Calculate(Tree*& tree, List*& letters, int * res, int * exitCode) {
+static void Calculate(Tree*& tree, List*& letters, int * res, int * exitCode, bool * hasError) {
     // Если текущий символ цифра
     if (Contain(DIGIT, tree->inf)) {
         // Получаем число
         *res = TakeNumber(tree);
-        exitCode = 0;
     }
     // Если текущий символ переменная
     else if (Contain(LETTER, tree->inf)) {
         // Получаем значение переменной
         *res = TakeLetter(tree->inf, letters);
-        exitCode = 0;
     }
     // Иначе получаем значение текущего выражения
     else
-        result(tree, letters, res, exitCode);
+        result(tree, letters, res, exitCode, hasError);
 }
 
 // Функция записи выражений из файла в список
@@ -433,6 +430,8 @@ static ListStr* GetNotes() {
     }
     // Удаляем последний пустой элемент
     C->next = nullptr;
+    if (formulas->str == "" && formulas->next == nullptr)
+        formulas = nullptr;
     return formulas;
 }
 
@@ -454,7 +453,7 @@ static int PrintNotes(ListStr* formulas) {
 static void WriteNote() {
     string formula;
     cout << "Введите выражение, которое нужно сохранить: ";
-    cin >> formula;
+    getline(cin, formula);
     // Функция записи в файл
     OutputFormula("example.txt", formula);
 }
@@ -536,13 +535,15 @@ int main()
     cout << "Введите номер:\n";
     cin >> optionNumber;
     // Неверный ввод
-    if (cin.peek() == ' '){
-        cout << "Присутствует пробел.";
+    if (cin.peek() != '\n'){
+        cout << "Присутствуют ненужные символы.";
+        system("PAUSE");
         return 1;
     }
     // Неверный ввод
     if (cin.fail()) {
         cout << "Ошибка чтения целого числа.";
+        system("PAUSE");
         return 1;
     }
     // Пропуск символа (для работы getline)
@@ -562,11 +563,13 @@ int main()
     if (count == optionNumber) {
         // Запись в файл
         WriteNote();
+        system("PAUSE");
         return 1;
     }
     // Если выражение не определено
     if (ExprStr == "\0") {
         cout << "Неверное значение.";
+        system("PAUSE");
         return 1;
     }
 
@@ -592,10 +595,17 @@ int main()
 
         // Подготовка переменных для высчитывания
         List* letters = nullptr;
-        int result; int exitCodeCalculate = 0;
+        int result = 0; int exitCodeCalculate = 0;
+        bool hasError = false;
+        do {
+            if (hasError) {
+                cout << "Еще раз\n";
+                hasError = false;
+            }
+            // Высчитывание результата дерева выражения
+            Calculate(root, letters, &result, &exitCodeCalculate, &hasError);
 
-        // Высчитывание результата дерева выражения
-        Calculate(root, letters, &result, &exitCodeCalculate);
+        } while (hasError);
 
         // Если работа функции завершилась без ошибок
         if (!exitCodeCalculate) {
@@ -608,4 +618,5 @@ int main()
             cout << "=" << result << endl;
         }
     }
+    system("PAUSE");
 }
