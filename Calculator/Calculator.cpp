@@ -25,9 +25,9 @@ struct ListStr {
     ListStr* next = nullptr;
 };
 
-static string DIGIT = "0123456789"; // Массив символов чисел для проверки символа на принадлежность к этому массиву
-static string LETTER = "abcdefghijklmnopqrstuvwxyz"; // Массив символов переменных для проверки символа на принадлежность к этому массиву
-static string OPERATIONS = "+-*/) "; // Массив допустимых символов в середине выражения
+static const string DIGIT = "0123456789"; // Массив символов чисел для проверки символа на принадлежность к этому массиву
+static const string LETTER = "abcdefghijklmnopqrstuvwxyz"; // Массив символов переменных для проверки символа на принадлежность к этому массиву
+static const string OPERATIONS = "+-*/^) "; // Массив допустимых символов в середине выражения
 Tree* root; // Дерево выражения
 HANDLE hSemLetter = CreateSemaphore(NULL, 1, 2, NULL); // Семафор для синхронизации доступа к списку значений переменных
 
@@ -139,7 +139,7 @@ static int EXPRESSION(Tree*& tree, int* SI, string ExprStr) {
 }
 
 
-// Функция анализа выражения с основными операторами * и /
+// Функция анализа выражения с основными операторами *, /, ^
 static int ADDEND(Tree*& tree, int* SI, string ExprStr) {
     int exitCode = 0; // Код завершения работы функции
     Tree* O = nullptr;
@@ -151,7 +151,7 @@ static int ADDEND(Tree*& tree, int* SI, string ExprStr) {
         exitCode |= Factor(O, SI, ExprStr);
 
         // Пока части выражения соединяются операторами * и /
-        while (((ExprStr[*SI] == '*') || (ExprStr[*SI] == '/')) && !(exitCode & 1)) {
+        while (((ExprStr[*SI] == '*') || (ExprStr[*SI] == '/') || (ExprStr[*SI] == '^')) && !(exitCode & 1)) {
             InsNode(tree, ExprStr[*SI]);
             tree->left = O;
             exitCode |= NextSymbol(SI, ExprStr);
@@ -371,6 +371,12 @@ void result(Tree*& tree, List*& letters, int* res, int* exitCode, bool * hasErro
         // Деление
         else if (tree->inf == '/') {
             *res = res1 / res2;
+        }
+        // Деление
+        else if (tree->inf == '^') {
+            *res = 1;
+            for(int i = 0; i < res2; i++)
+                *res *= res1;
         }
     }
     __except (ExceptionFilter(GetExceptionCode(), exitCode, hasError)) {
