@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Calculator", "Calculator\Calculator.vcxproj", "{8120ABED-95FA-4987-B8C7-03808701E601}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTesting", "UnitTesting\UnitTesting.vcxproj", "{7BEEF505-3B71-404F-8479-5D3559F13F73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		CalculatorT|x64 = CalculatorT|x64
@@ -27,6 +29,18 @@ Global
 		{8120ABED-95FA-4987-B8C7-03808701E601}.Release|x64.Build.0 = Debug|x64
 		{8120ABED-95FA-4987-B8C7-03808701E601}.Release|x86.ActiveCfg = Release|Win32
 		{8120ABED-95FA-4987-B8C7-03808701E601}.Release|x86.Build.0 = Release|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.CalculatorT|x64.ActiveCfg = Debug|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.CalculatorT|x64.Build.0 = Debug|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.CalculatorT|x86.ActiveCfg = Debug|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.CalculatorT|x86.Build.0 = Debug|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Debug|x64.ActiveCfg = Debug|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Debug|x64.Build.0 = Debug|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Debug|x86.ActiveCfg = Debug|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Debug|x86.Build.0 = Debug|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Release|x64.ActiveCfg = Release|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Release|x64.Build.0 = Release|x64
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Release|x86.ActiveCfg = Release|Win32
+		{7BEEF505-3B71-404F-8479-5D3559F13F73}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

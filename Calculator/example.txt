@@ -1,2 +1,6 @@
 1/a
 
+IFTHENELSE(x>3|y<4,x,y)
+IFTHENELSE(x>3&y<4,1,0)
+MAX(a+c,MAX(a+b,b+c))
+IFTHENELSE(OR(x>y,y=0),x,y)*0.5
